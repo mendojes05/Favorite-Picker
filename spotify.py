@@ -45,10 +45,23 @@ def search_playlist(token, playlist_id):
     url = f"https://api.spotify.com/v1/playlists/{playlist_id}"
     headers = get_auth_header(token)
     result = get(url, headers=headers)
-    json_result = json.loads(result.content)["tracks"]
+    
+    # Check if request was successful    
+    if result.status_code != 200:
+        print(f"Error: Unable to fetch playlist (Status Code: {result.status_code})")
+        return None
 
-    tracks = json_result["items"]
-    return tracks    
+    json_result = json.loads(result.content)
+
+    # Ensure 'tracks' and 'items' exist in the response
+    if "tracks" not in json_result or "items" not in json_result["tracks"]:
+        print("Error: Invalid playlist format or empty playlist")
+        return None
+    
+    if len(json_result["tracks"]["items"]) < 1:
+        return None
+
+    return json_result["tracks"]["items"]
 
 
 def get_songs(token, artist_id):
@@ -57,20 +70,3 @@ def get_songs(token, artist_id):
     result = get(url, headers=headers)
     json_result = json.loads(result.content)["tracks"]
     return json_result
-
-# token = get_token()
-# result = search_artist(token,"ado")
-# artist_id = result["id"]
-# # print(result["name"])
-
-# playlist = search_playlist(token, "4NSoXo18uPJp0QMR8oWUcx")
-# # print(playlist)
-# # for song in playlist:
-# #     print(song["track"]["name"])
-# for idx, song in enumerate(playlist):
-#     print(f"{idx + 1}. {song['track']['name']}")
-
-
-# # song = get_songs(token, artist_id)
-# # for idx, song in enumerate(song):
-# #     print(f"{idx + 1}.{song['name']}")
