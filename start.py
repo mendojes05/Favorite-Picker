@@ -58,6 +58,7 @@ while len(favsong) < total - 1:
     while picker.isFinished(songlist) == False:
 
     #pick the two choices that the user will choose from by iterating through the list
+        j = i
         choice1 = picker.choicepicker(songlist,i)
         if choice1 == None: 
             i = 0
@@ -67,6 +68,8 @@ while len(favsong) < total - 1:
         if choice2 == None:
             i = 0
             choice2 = picker.choicepicker(songlist,i)
+        i = songlist.index(choice2) + 1
+
 
         print("Pick your favorite")
         print(f"(1) {choice1.song_str} \n(2) {choice2.song_str}")
@@ -79,9 +82,9 @@ while len(favsong) < total - 1:
             choice1.elim(choice2)
         else: 
             print("Please enter 1 or 2")
+            i = j
             continue
         
-        i = songlist.index(choice2) + 1
     
 
     picker.newFave(songlist,favsong)
