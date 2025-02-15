@@ -18,6 +18,10 @@ if 'songlist' not in st.session_state:
 currentfav = ""
 keepGoing = True
 favcount = 0
+st.set_page_config(
+    page_title="Fav Song Picker",
+    layout="centered"
+)
 
 def get_songs(playlist):
     global total
@@ -45,8 +49,7 @@ def newFave():
             st.session_state.favsong.append(song)
             st.session_state.songlist.remove(song)
             st.session_state.currentfav = song
-    # for song in songlist:
-    #         print(song.name)
+
     
 #check if only one song is remaining
 def isFinished():
@@ -59,44 +62,8 @@ def isFinished():
     else: 
         return True
     
-def handle_choice(winner, loser, i):
-    loser.elim(winner)
-    # picking(i)
-    # st.rerun()
-
-    
-def picking(i):
-    if isFinished() == False:
-
-        #pick the two choices that the user will choose from by iterating through the list
-        j = i
-        choice1 = choicepicker(st.session_state.songlist,i)
-        #if rest of the songs have been eliminated go through list from the beginning
-        if choice1 == None: 
-            i = 0
-            choice1 = choicepicker(st.session_state.songlist,i)
-        i = st.session_state.songlist.index(choice1) + 1
-        choice2 = choicepicker(st.session_state.songlist,i)
-        if choice2 == None:
-            i = 0
-            choice2 = choicepicker(st.session_state.songlist,i)
-        i = st.session_state.songlist.index(choice2) + 1
-
-
-        st.write("Pick your favorite")
-        st.button(
-            label = choice1.song_str,
-            key=f"choice1_{i}",
-            on_click=lambda: handle_choice(choice1, choice2, i)
-        )
-        st.button(
-            label = choice2.song_str,
-            key=f"choice2_{i}",
-            on_click=lambda: handle_choice(choice2, choice1, i)
-        )        
-
-def we_keep_going():
-    st.rerun()
+def handle_choice(winner, loser):
+    loser.elim(winner)   
 
 def end_of_game():
     s = ""
@@ -122,8 +89,6 @@ def link_entered(link):
             st.session_state.goodlink = True
             get_songs(playlist)
             st.rerun()
-            # picker.start_picking(playlist)
-            # favsong = picker.picking(songlist)
         else:
             st.write("Invalid Link. Please make sure the playlist is public and not empty.")
     else:
@@ -132,7 +97,6 @@ def link_entered(link):
 
 token = spotify.get_token()
 
-   
 
 st.title("Favorite Song Picker")
 if st.session_state.goodlink == False:
@@ -148,61 +112,61 @@ else:
     currenttotal = len(st.session_state.songlist)
 
     s = ""
-    i = 0
+    i = st.session_state.i
 
     #check if there is only one song remaining and skip the choosing 
-    if favcount < st.session_state.total - 1:
-        if favcount != 0:
+    if len(st.session_state.songlist) > 1:
+
+        if isFinished() == False:
+
+            #pick the two choices that the user will choose from by iterating through the list
+            choice1 = choicepicker(st.session_state.songlist,st.session_state.i)
+            #if rest of the songs have been eliminated go through list from the beginning
+            if choice1 == None: 
+                st.session_state.i = 0
+                choice1 = choicepicker(st.session_state.songlist,st.session_state.i)
+            st.session_state.i = st.session_state.songlist.index(choice1) + 1
+            choice2 = choicepicker(st.session_state.songlist,st.session_state.i)
+            if choice2 == None:
+                st.session_state.i = 0
+                choice2 = choicepicker(st.session_state.songlist,st.session_state.i)
+            st.session_state.i = st.session_state.songlist.index(choice2) + 1
+
+
+            st.write("Pick your favorite")
+            col = st.columns(2)
+            col[0].button(
+                label = choice1.song_str,
+                key=f"choice1_{st.session_state.l}",
+                on_click=lambda: handle_choice(choice1, choice2)
+            )
+            col[1].button(
+                label = choice2.song_str,
+                key=f"choice2_{st.session_state.l+1}",
+                on_click=lambda: handle_choice(choice2, choice1)
+            )        
+            st.session_state.l += 1
+
+
+        else:
+            newFave()
+
+            #check if there is only one song left and rerun if there is
+            if len(st.session_state.songlist) == 1:
+                st.rerun()
+
             #make it so songs that were eliminated by last favorite are now marked as not eliminated
             for song in st.session_state.songlist:
                 if song.eliminator == st.session_state.currentfav:
                     song.eliminated = False
-                    # newlist.append(song)
-
-        # picking(0)
-
-        if isFinished() == False:
 
             # ensure that even if last 2 choices are properly asked even if they haven't been eliminated by the same song
-            if currenttotal < 3:
+            if len(st.session_state.songlist) < 3:
                 for song in st.session_state.songlist:
-                    song.eliminated = False 
+                    song.eliminated = False
 
-            #pick the two choices that the user will choose from by iterating through the list
-            choice1 = choicepicker(st.session_state.songlist,i)
-            #if rest of the songs have been eliminated go through list from the beginning
-            if choice1 == None: 
-                i = 0
-                choice1 = choicepicker(st.session_state.songlist,i)
-            i = st.session_state.songlist.index(choice1) + 1
-            choice2 = choicepicker(st.session_state.songlist,i)
-            if choice2 == None:
-                i = 0
-                choice2 = choicepicker(st.session_state.songlist,i)
-            i = st.session_state.songlist.index(choice2) + 1
-
-
-            st.write("Pick your favorite")
-            st.button(
-                label = choice1.song_str,
-                key=f"choice1_{st.session_state.l}",
-                on_click=lambda: handle_choice(choice1, choice2, i)
-            )
-            st.button(
-                label = choice2.song_str,
-                key=f"choice2_{st.session_state.l+1}",
-                on_click=lambda: handle_choice(choice2, choice1, i)
-            )        
-            st.session_state.l += 1
-            # for song in st.session_state.songlist:
-                # print(song.song_str)
-                # print('-------------------------')
-
-        else:
-            newFave()
-            if len(st.session_state.songlist) == 1:
-                st.rerun()
-            count =1
+            st.session_state.i = 0
+            count = 1
             for song in st.session_state.favsong:
                 s += f"{count}. {song.song_str}\n"
                 count += 1
@@ -213,12 +177,11 @@ else:
             st.button(
                 label = "Yes",
                 key="yes",
-                # on_click=lambda: we_keep_going()
             )
             keepGoing = st.button(
                 label = "No",
                 key="no",
-                on_click=lambda:exit
+                on_click=lambda:end_of_game()
             )
     else: end_of_game()
 
