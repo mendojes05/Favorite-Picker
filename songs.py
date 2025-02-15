@@ -11,6 +11,7 @@ class Song:
         self.song_str = f"{self.name} - {self.artists}"
         self.eliminated = False
         self.cover = track['track']['album']['images'][0]['url']
+        self.link = track['track']['external_urls']['spotify']
 
 
     #method to set when eliminated

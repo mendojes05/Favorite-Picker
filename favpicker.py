@@ -118,7 +118,7 @@ def link_entered(link):
 token = spotify.get_token()
 
 
-st.title("Favorite Song Picker")
+st.title("Find out your favorite song")
 if st.session_state.goodlink == False:
     link = st.text_input("Please enter in the spotify link for your playlist. Please make sure the playlist is public!",
                      key = "Link",
@@ -164,10 +164,15 @@ else:
             )
             cont1.markdown(f"**{choice1.name}**")
             cont1.markdown(choice1.artists)
-            cont1.button(
+            cont1col = cont1.columns([0.75,0.25])
+            cont1col[0].button(
                 label = "Select",
                 key=f"choice1_{st.session_state.l}",
                 on_click=lambda: handle_choice(choice1, choice2)
+            )
+            cont1col[1].link_button(
+                label="Listen",
+                url=choice1.link
             )
 
 
@@ -180,11 +185,16 @@ else:
             )
             cont2.markdown(f"**{choice2.name}**")
             cont2.markdown(choice2.artists)
-            cont2.button(
+            cont2col = cont2.columns([0.75,0.25])
+            cont2col[0].button(
                 label = "Select",
                 key=f"choice2_{st.session_state.l+1}",
                 on_click=lambda: handle_choice(choice2, choice1)
             )        
+            cont2col[1].link_button(
+                label="Listen",
+                url=choice2.link
+            )            
             st.session_state.l += 1
 
 
@@ -197,29 +207,35 @@ else:
 
             #make it so songs that were eliminated by last favorite are now marked as not eliminated
             songcount = 0
+            thissong = "" #placeholder for current song when iterating
             for song in st.session_state.songlist:
                 if song.eliminator == st.session_state.currentfav:
                     song.eliminated = False
+                    thissong = song
                     songcount += 1
             #checks if there is only one song that was eliminated by the current fav            
             if songcount < 2:
                 st.rerun()
 
 
-            # ensure that even if last 2 choices are properly asked even if they haven't been eliminated by the same song
-            if len(st.session_state.songlist) < 3:
-                for song in st.session_state.songlist:
-                    song.eliminated = False
+            # # ensure that even if last 2 choices are properly asked even if they haven't been eliminated by the same song
+            # if len(st.session_state.songlist) < 3:
+            #     if st.session_state.songlist[0].eliminator == st.session_state.songlist[1]:
+            #     for song in st.session_state.songlist:
+            #         song.eliminated = False
 
             st.session_state.i = 0
             show_favs()
 
-            st.write("Would you like to keep going?")
-            st.button(
+            keepgoingcol = st.columns(3)
+            keepgoingcol[1].write("Would you like to keep going?")
+
+            yesno = keepgoingcol[1].columns(2)
+            yesno[0].button(
                 label = "Yes",
                 key="yes",
             )
-            keepGoing = st.button(
+            keepGoing = yesno[1].button(
                 label = "No",
                 key="no",
                 on_click=lambda:end_of_game()
