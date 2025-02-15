@@ -72,11 +72,31 @@ def end_of_game():
     #add the last song to the list after choosing ends
     if keepGoing != False:
         for song in st.session_state.songlist: st.session_state.favsong.append(song)
+    show_favs()
+
+def show_favs():
+    count = 1
+    st.write("Your favorites are:")
+    s=""
     for song in st.session_state.favsong:
-        s += f"{count}. {song.song_str}\n"
-        count += 1
-    st.write("Your favorites are: ")
-    st.write(s)
+        listcont = st.container(border=True,height=200)
+        listcol = listcont.columns([0.1,0.6,0.3])
+
+        listcol[0].write("")
+        listcol[0].write("")
+        listcol[0].write("")
+        listcol[0].markdown(f"**{count})**")
+
+        listcol[2].image(image=song.cover,width=165)
+        
+        listcol[1].write("")
+        listcol[1].write("")
+        listcol[1].write("")
+        listcol[1].markdown(f"**{song.name}**")
+        listcol[1].markdown(f"{song.artists}")
+        count += 1        
+        
+
 
     
 
@@ -135,13 +155,33 @@ else:
 
             st.write("Pick your favorite")
             col = st.columns(2)
-            col[0].button(
-                label = choice1.song_str,
+            cont1 = col[0].container(
+                border=True,
+                height=500
+            )
+            cont1.image(
+                image=choice1.cover
+            )
+            cont1.markdown(f"**{choice1.name}**")
+            cont1.markdown(choice1.artists)
+            cont1.button(
+                label = "Select",
                 key=f"choice1_{st.session_state.l}",
                 on_click=lambda: handle_choice(choice1, choice2)
             )
-            col[1].button(
-                label = choice2.song_str,
+
+
+            cont2 = col[1].container(
+                border=True,
+                height=500
+            )
+            cont2.image(
+                image=choice2.cover
+            )
+            cont2.markdown(f"**{choice2.name}**")
+            cont2.markdown(choice2.artists)
+            cont2.button(
+                label = "Select",
                 key=f"choice2_{st.session_state.l+1}",
                 on_click=lambda: handle_choice(choice2, choice1)
             )        
@@ -156,9 +196,15 @@ else:
                 st.rerun()
 
             #make it so songs that were eliminated by last favorite are now marked as not eliminated
+            songcount = 0
             for song in st.session_state.songlist:
                 if song.eliminator == st.session_state.currentfav:
                     song.eliminated = False
+                    songcount += 1
+            #checks if there is only one song that was eliminated by the current fav            
+            if songcount < 2:
+                st.rerun()
+
 
             # ensure that even if last 2 choices are properly asked even if they haven't been eliminated by the same song
             if len(st.session_state.songlist) < 3:
@@ -166,12 +212,7 @@ else:
                     song.eliminated = False
 
             st.session_state.i = 0
-            count = 1
-            for song in st.session_state.favsong:
-                s += f"{count}. {song.song_str}\n"
-                count += 1
-            st.write("Your favorites are:")
-            st.write(s)
+            show_favs()
 
             st.write("Would you like to keep going?")
             st.button(
