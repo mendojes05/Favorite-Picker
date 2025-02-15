@@ -61,7 +61,7 @@ def search_playlist(token, playlist_id):
     if len(json_result["tracks"]["items"]) < 1:
         return None
 
-    return json_result["tracks"]["items"]
+    return json_result
 
 
 def get_songs(token, artist_id):

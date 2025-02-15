@@ -11,8 +11,10 @@ if 'songlist' not in st.session_state:
     st.session_state.total = 0
     st.session_state.l = 0 #index for buttons
     st.session_state.i = 0 #index for selecting what songs to show
-    st.session_state.goodlink = False
+    st.session_state.state = 0
     st.session_state.currentfav = ""
+    st.session_state.playlist_name = ""
+    st.session_state.platylist_cover = ""
 
 
 currentfav = ""
@@ -94,38 +96,97 @@ def show_favs():
         listcol[1].write("")
         listcol[1].markdown(f"**{song.name}**")
         listcol[1].markdown(f"{song.artists}")
-        count += 1        
+        count += 1    
+
+def show_playlist():
+    count = 1
+    st.markdown(f"You chose playlist:")
+    playlistcol = st.columns(3)
+    playlistcol[1].image(image=st.session_state.playlist_cover)
+    # playlistcol2 = playlistcol[1].columns([0.2,0.6,0.2])
+    # playlistcol[1].markdown(f"**{st.session_state.playlist_name}**")
+    playlistcol[1].markdown(
+    f"""
+    <div style="text-align: center; font-weight: bold; font-size: 18px;">
+        {st.session_state.playlist_name}
+    </div>
+    """,
+    unsafe_allow_html=True
+    )
+    # playlistcol[1].markdown(<div style="text-align: center"> {st.session_state.playlist_name} </div>)
+    for song in st.session_state.songlist:
+        listcont = st.container(border=True,height=200)
+        listcol = listcont.columns([0.1,0.6,0.3])
+
+        listcol[0].write("")
+        listcol[0].write("")
+        listcol[0].write("")
+        listcol[0].markdown(f"**{count})**")
+
+        listcol[2].image(image=song.cover,width=165)
         
-
-
-    
+        listcol[1].write("")
+        listcol[1].write("")
+        listcol[1].write("")
+        listcol[1].markdown(f"**{song.name}**")
+        listcol[1].markdown(f"{song.artists}")
+        count += 1    
+        
+  
 
 def link_entered(link):
-    playlist_link = st.session_state.Link
+    playlist_link = link
     if len(playlist_link) == 76:
         playlist_id = playlist_link[34:56]
         playlist = spotify.search_playlist(token, playlist_id)
+        playlist_tracks = playlist["tracks"]["items"]
+        st.session_state.playlist_name = playlist['name']
+        st.session_state.playlist_cover = playlist['images'][0]['url']
         if playlist != None:
-            st.session_state.goodlink = True
-            get_songs(playlist)
+            st.session_state.state = 1
+            get_songs(playlist_tracks)
             st.rerun()
         else:
             st.write("Invalid Link. Please make sure the playlist is public and not empty.")
     else:
         st.write("Invalid Link. Please make sure the playlist is public and not empty.")
 
+def change_playlist():
+    st.session_state.songlist = []
+    st.session_state.Link = ""
+    st.session_state.state = 0
+
+def start_picking():
+    st.session_state.state = 2
 
 token = spotify.get_token()
 
 
 st.title("Find out your favorite song")
-if st.session_state.goodlink == False:
+if st.session_state.state == 0:
     link = st.text_input("Please enter in the spotify link for your playlist. Please make sure the playlist is public!",
                      key = "Link",
                     #  on_change =lambda: link_entered(link)
                      )
     if link != "":
         link_entered(link)
+
+elif st.session_state.state == 1:
+    show_playlist()
+    startcol = st.columns(3)
+    startcol[1].write("Would you like to start picking?")
+
+    start = startcol[1].columns(2)
+    start[0].button(
+        label = "Start Picking",
+        key="start",
+        on_click=lambda:start_picking()
+    )
+    keepGoing = start[1].button(
+        label = "Change Playlist",
+        key="change",
+        on_click=lambda:change_playlist()
+    )    
 
 else:
     favcount = len(st.session_state.favsong)
