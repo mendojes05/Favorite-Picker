@@ -1,7 +1,7 @@
 import songs
 import spotify
 import streamlit as st
-import pandas as pd
+import random
 
 #initialize global variables
 if 'songlist' not in st.session_state:
@@ -66,14 +66,15 @@ def isFinished():
 def handle_choice(winner, loser):
     loser.elim(winner)   
 
-def end_of_game():
-    s = ""
-    count = 1
-    st.write("All Done!")
+def end_of_game(normal_end):
+    st.subheader("All Done!")
     #add the last song to the list after choosing ends
-    if keepGoing != False:
+    if normal_end == True:
         for song in st.session_state.songlist: st.session_state.favsong.append(song)
     show_favs()
+
+def stop_picking():
+    st.session_state.songlist = []
 
 def show_favs():
     count = 1
@@ -86,7 +87,17 @@ def show_favs():
         listcol[0].write("")
         listcol[0].write("")
         listcol[0].write("")
-        listcol[0].markdown(f"**{count})**")
+        if count == 1:
+            listcol[0].header(''':first_place_medal:''')
+        elif count == 2:
+            listcol[0].header(''':second_place_medal:''')
+        elif count == 3:
+            listcol[0].header(''':third_place_medal:''')
+        else:
+            listcol[0].header(count)
+
+
+
 
         listcol[2].image(image=song.cover,width=165)
         
@@ -99,8 +110,15 @@ def show_favs():
 
 def show_playlist():
     count = 1
-    st.markdown(f"You chose playlist:")
     playlistcol = st.columns(3)
+    playlistcol[1].markdown(
+    f"""
+    <div style="text-align: center; font-weight: bold; font-size: 18px;">
+        You chose this playlist:
+    </div>
+    """,
+    unsafe_allow_html=True
+    )    
     playlistcol[1].image(image=st.session_state.playlist_cover)
     # playlistcol2 = playlistcol[1].columns([0.2,0.6,0.2])
     # playlistcol[1].markdown(f"**{st.session_state.playlist_name}**")
@@ -120,7 +138,7 @@ def show_playlist():
         listcol[0].write("")
         listcol[0].write("")
         listcol[0].write("")
-        listcol[0].markdown(f"**{count})**")
+        listcol[0].header(count)
 
         listcol[2].image(image=song.cover,width=165)
         
@@ -157,11 +175,12 @@ def change_playlist():
 
 def start_picking():
     st.session_state.state = 2
+    random.shuffle(st.session_state.songlist)
 
 token = spotify.get_token()
 
 
-st.title("Find out your favorite song")
+st.title(''':musical_note: Find out your favorite song :musical_note:''')
 if st.session_state.state == 0:
     link = st.text_input("Please enter in the spotify link for your playlist. Please make sure the playlist is public!",
                      key = "Link",
@@ -171,7 +190,6 @@ if st.session_state.state == 0:
         link_entered(link)
 
 elif st.session_state.state == 1:
-    show_playlist()
     startcol = st.columns(3)
     startcol[1].write("Would you like to start picking?")
 
@@ -186,6 +204,7 @@ elif st.session_state.state == 1:
         key="change",
         on_click=lambda:change_playlist()
     )    
+    show_playlist()
 
 else:
     favcount = len(st.session_state.favsong)
@@ -220,7 +239,8 @@ else:
                 height=500
             )
             cont1.image(
-                image=choice1.cover
+                image=choice1.cover,
+                use_container_width=True
             )
             cont1.markdown(f"**{choice1.name}**")
             cont1.markdown(choice1.artists)
@@ -241,7 +261,8 @@ else:
                 height=500
             )
             cont2.image(
-                image=choice2.cover
+                image=choice2.cover,
+                use_container_width=True
             )
             cont2.markdown(f"**{choice2.name}**")
             cont2.markdown(choice2.artists)
@@ -298,8 +319,9 @@ else:
             keepGoing = yesno[1].button(
                 label = "No",
                 key="no",
-                on_click=lambda:end_of_game()
+                on_click=lambda:stop_picking()
             )
-    else: end_of_game()
+    elif len(st.session_state.songlist) == 1: end_of_game(True)
+    else: end_of_game(False)
 
 
