@@ -14,6 +14,8 @@ if 'songlist' not in st.session_state:
     st.session_state.currentfav = ""
     st.session_state.playlist_name = ""
     st.session_state.platylist_cover = ""
+    st.session_state.elim_countdown = 0
+    st.session_state.song_ids = set()
 
 
 currentfav = ""
@@ -21,15 +23,30 @@ keepGoing = True
 favcount = 0
 st.set_page_config(
     page_title="Fav Song Picker",
-    layout="centered"
+    layout="wide"
 )
 
 def get_songs(playlist):
-    global total
+    
     for track in playlist:
-        this_song = songs.Song(track)
-        st.session_state.songlist.append(this_song)
-        st.session_state.total += 1   
+        song_id = track['track']['id']
+        if song_id not in st.session_state.song_ids:
+            st.session_state.song_ids.add(song_id)
+            print(song_id)
+            this_song = songs.Song(track)
+            st.session_state.songlist.append(this_song)
+            st.session_state.total += 1   
+        elif song_id == None:
+            duplicate = False
+            for song in st.session_state.songlist:
+                if song.name == track['track']['name']:
+                    duplicate = True
+                    break
+            if duplicate == False:
+                this_song = songs.Song(track)
+                st.session_state.songlist.append(this_song)
+                st.session_state.total += 1 
+
 
 #pick a song that hasn't been eliminated
 def choicepicker(songlist, i):
@@ -64,11 +81,19 @@ def isFinished():
         return True
     
 def handle_choice(winner, loser):
-    loser.elim(winner)   
+    loser.elim(winner)
+    st.session_state.elim_countdown += -1   
 
 def end_of_game(normal_end):
-    st.subheader("All Done!")
-    #add the last song to the list after choosing ends
+    endcol = st.columns(3)
+    endcol[1].markdown(
+    f"""
+    <div style="text-align: center; font-size: 26px;">
+        All Done!
+    </div>
+    """,
+    unsafe_allow_html=True
+    )     #add the last song to the list after choosing ends
     if normal_end == True:
         for song in st.session_state.songlist: st.session_state.favsong.append(song)
     show_favs()
@@ -78,10 +103,19 @@ def stop_picking():
 
 def show_favs():
     count = 1
-    st.write("Your favorites are:")
+    favcol = st.columns(3)
+    favcol[1].markdown(
+    f"""
+    <div style="text-align: center; font-size: 18px;">
+        Your favorites are:
+    </div>
+    """,
+    unsafe_allow_html=True
+    )
+    playlistcol = st.columns([0.25,0.75,0.25])
     s=""
     for song in st.session_state.favsong:
-        listcont = st.container(border=True,height=200)
+        listcont = playlistcol[1].container(border=True,height=250)
         listcol = listcont.columns([0.1,0.6,0.3])
 
         listcol[0].write("")
@@ -97,29 +131,36 @@ def show_favs():
             listcol[0].header(count)
 
 
-
-
-        listcol[2].image(image=song.cover,width=165)
+        listcol[2].image(image=song.cover,width=215)
         
         listcol[1].write("")
         listcol[1].write("")
         listcol[1].write("")
-        listcol[1].markdown(f"**{song.name}**")
+        listcol[1].subheader(f"**{song.name}**")
         listcol[1].markdown(f"{song.artists}")
         count += 1    
 
 def show_playlist():
     count = 1
-    playlistcol = st.columns(3)
-    playlistcol[1].markdown(
+    covercol = st.columns(3)
+    playlistcol = st.columns([0.25,0.75,0.25])
+    covercol[1].markdown(
     f"""
-    <div style="text-align: center; font-weight: bold; font-size: 18px;">
+    <div style="text-align: center; font-size: 18px;">
         You chose this playlist:
     </div>
     """,
     unsafe_allow_html=True
     )    
-    playlistcol[1].image(image=st.session_state.playlist_cover)
+    # covercol[1].image(image=st.session_state.playlist_cover,width=300)
+    covercol[1].markdown(
+    f"""
+    <div style="display: flex; justify-content: center;">
+        <img src="{st.session_state.playlist_cover}" width="300">
+    </div>
+    """,
+    unsafe_allow_html=True
+)
     # playlistcol2 = playlistcol[1].columns([0.2,0.6,0.2])
     # playlistcol[1].markdown(f"**{st.session_state.playlist_name}**")
     playlistcol[1].markdown(
@@ -132,7 +173,7 @@ def show_playlist():
     )
     # playlistcol[1].markdown(<div style="text-align: center"> {st.session_state.playlist_name} </div>)
     for song in st.session_state.songlist:
-        listcont = st.container(border=True,height=200)
+        listcont = playlistcol[1].container(border=True,height=250)
         listcol = listcont.columns([0.1,0.6,0.3])
 
         listcol[0].write("")
@@ -140,12 +181,12 @@ def show_playlist():
         listcol[0].write("")
         listcol[0].header(count)
 
-        listcol[2].image(image=song.cover,width=165)
+        listcol[2].image(image=song.cover,width=215)
         
         listcol[1].write("")
         listcol[1].write("")
         listcol[1].write("")
-        listcol[1].markdown(f"**{song.name}**")
+        listcol[1].subheader(f"**{song.name}**")
         listcol[1].markdown(f"{song.artists}")
         count += 1    
         
@@ -164,9 +205,9 @@ def link_entered(link):
             get_songs(playlist_tracks)
             st.rerun()
         else:
-            st.write("Invalid Link. Please make sure the playlist is public and not empty.")
+            linkcol[1].write("Invalid Link. Please make sure the playlist is public and not empty.")
     else:
-        st.write("Invalid Link. Please make sure the playlist is public and not empty.")
+        linkcol[1].write("Invalid Link. Please make sure the playlist is public and not empty.")
 
 def change_playlist():
     st.session_state.songlist = []
@@ -179,10 +220,19 @@ def start_picking():
 
 token = spotify.get_token()
 
+pagecol = st.columns([0.25,0.75,0.25])
+# pagecol[1].title(''':musical_note: Find out your favorite song :musical_note:''')
+pagecol[1].markdown(
+    """
+    <h1 style="text-align: center;">🎵 Find out your favorite song 🎵</h1>
+    """,
+    unsafe_allow_html=True
+)
 
-st.title(''':musical_note: Find out your favorite song :musical_note:''')
+linkcol = st.columns([0.40,0.5,0.40])
+
 if st.session_state.state == 0:
-    link = st.text_input("Please enter in the spotify link for your playlist. Please make sure the playlist is public!",
+    link = linkcol[1].text_input("Please enter in the spotify link for your playlist. Please make sure the playlist is public!",
                      key = "Link",
                     #  on_change =lambda: link_entered(link)
                      )
@@ -190,16 +240,25 @@ if st.session_state.state == 0:
         link_entered(link)
 
 elif st.session_state.state == 1:
+    st.session_state.elim_countdown = len(st.session_state.songlist) - 1
     startcol = st.columns(3)
-    startcol[1].write("Would you like to start picking?")
+    # startcol[1].write("Would you like to start picking?")
+    startcol[1].markdown(
+    f"""
+    <div style="text-align: center; font-size: 18px;">
+        Would you like to start picking?
+    </div>
+    """,
+    unsafe_allow_html=True
+    )     
 
-    start = startcol[1].columns(2)
-    start[0].button(
+    start = startcol[1].columns([0.2,0.1,0.1,0.2])
+    start[1].button(
         label = "Start Picking",
         key="start",
         on_click=lambda:start_picking()
     )
-    keepGoing = start[1].button(
+    keepGoing = start[2].button(
         label = "Change Playlist",
         key="change",
         on_click=lambda:change_playlist()
@@ -232,11 +291,56 @@ else:
             st.session_state.i = st.session_state.songlist.index(choice2) + 1
 
 
-            st.write("Pick your favorite")
-            col = st.columns(2)
-            cont1 = col[0].container(
+
+            col = st.columns([0.1,0.1,0.1,0.1])
+            pick_container = col[1].container(
+                height=50,
+                border=False
+            )
+            pick_container.subheader("Pick your favorite")
+            pick_container2 = col[2].container(
+                height=50,
+                border=False
+            )
+            pick_container3 = col[3].container(
+                height=50,
+                border=False
+            )
+            countdown_container = col[3].container(
+                height=580,
+                border=False
+            )
+            countdown_container.markdown(
+                f"""
+                <div style="
+                    position: relative; 
+                    width: 100%; 
+                    height: 580px; 
+                    display: flex; 
+                    flex-direction: column;
+                    justify-content: center; 
+                    align-items: center; 
+                    text-align: center;
+                    font-size: 26px; /* Adjust as needed */
+                    line-height: 1.2;
+                ">
+                    <span style="font-size: 72px; font-weight: bold;line-height: 0.5;">
+                        {st.session_state.elim_countdown}
+                    </span>
+                    <br>
+                    more eliminations until
+                    <br>
+                    next favorite is found
+                </div>
+                """,
+                unsafe_allow_html=True
+            )       
+
+
+
+            cont1 = col[1].container(
                 border=True,
-                height=500
+                height=580
             )
             cont1.image(
                 image=choice1.cover,
@@ -250,15 +354,16 @@ else:
                 key=f"choice1_{st.session_state.l}",
                 on_click=lambda: handle_choice(choice1, choice2)
             )
-            cont1col[1].link_button(
-                label="Listen",
-                url=choice1.link
-            )
+            if choice1.link != None:
+                cont1col[1].link_button(
+                    label="Listen",
+                    url=choice1.link
+                )
 
 
-            cont2 = col[1].container(
+            cont2 = col[2].container(
                 border=True,
-                height=500
+                height=580
             )
             cont2.image(
                 image=choice2.cover,
@@ -271,11 +376,12 @@ else:
                 label = "Select",
                 key=f"choice2_{st.session_state.l+1}",
                 on_click=lambda: handle_choice(choice2, choice1)
-            )        
-            cont2col[1].link_button(
-                label="Listen",
-                url=choice2.link
-            )            
+            )
+            if choice2.link != None:         
+                cont2col[1].link_button(
+                    label="Listen",
+                    url=choice2.link
+                )            
             st.session_state.l += 1
 
 
@@ -297,6 +403,7 @@ else:
             #checks if there is only one song that was eliminated by the current fav            
             if songcount < 2:
                 st.rerun()
+            st.session_state.elim_countdown = songcount #set countdown to how many songs are to be shown next 
 
 
             # # ensure that even if last 2 choices are properly asked even if they haven't been eliminated by the same song
@@ -305,18 +412,27 @@ else:
             #     for song in st.session_state.songlist:
             #         song.eliminated = False
 
+            #reset choice index and elim countdown
             st.session_state.i = 0
             show_favs()
 
             keepgoingcol = st.columns(3)
-            keepgoingcol[1].write("Would you like to keep going?")
+            # keepgoingcol[1].write("Would you like to keep going?")
+            keepgoingcol[1].markdown(
+            f"""
+            <div style="text-align: center; font-size: 18px;">
+                Would you like to keep going?
+            </div>
+            """,
+            unsafe_allow_html=True
+            )
 
-            yesno = keepgoingcol[1].columns(2)
-            yesno[0].button(
+            yesno = keepgoingcol[1].columns([0.2,0.1,0.1,0.2])
+            yesno[1].button(
                 label = "Yes",
                 key="yes",
             )
-            keepGoing = yesno[1].button(
+            keepGoing = yesno[2].button(
                 label = "No",
                 key="no",
                 on_click=lambda:stop_picking()
