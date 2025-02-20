@@ -403,7 +403,7 @@ else:
             #checks if there is only one song that was eliminated by the current fav            
             if songcount < 2:
                 st.rerun()
-            st.session_state.elim_countdown = songcount #set countdown to how many songs are to be shown next 
+            st.session_state.elim_countdown = songcount - 1 #set countdown to how many songs are to be shown next 
 
 
             # # ensure that even if last 2 choices are properly asked even if they haven't been eliminated by the same song
