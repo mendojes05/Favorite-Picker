@@ -14,10 +14,11 @@ if 'songlist' not in st.session_state:
     st.session_state.i = 0 #index for selecting what songs to show
     st.session_state.state = 0
     st.session_state.currentfav = ""
-    st.session_state.playlist_name = ""
+    st.session_state.list_name = ""
     st.session_state.platylist_cover = ""
     st.session_state.elim_countdown = 0
     st.session_state.song_ids = set()
+    st.session_state.song_names = set()
 
 
 st.set_page_config(
@@ -30,9 +31,7 @@ def get_token():
     spotify = tk.Spotify(app_token)
     return spotify
 
-def get_songs(playlist_id):
-    playlist = spotify.playlist_items(playlist_id)
-    alltracks = spotify.all_items(playlist) #bypass the limit of 100 songs and add all
+def get_playlist_songs(alltracks):
     for track in alltracks:
         song_id = track.track.id
         #make sure the song isn't already in the list
@@ -52,6 +51,16 @@ def get_songs(playlist_id):
                 this_song = songs.Song(track.track)
                 st.session_state.songlist.append(this_song)
                 st.session_state.total += 1
+
+def get_album_songs(album):
+    for track in album:
+        full_track = spotify.track(track.id)
+        #make sure the song isn't already in the list
+        if track.name not in st.session_state.song_names:
+            st.session_state.song_names.add(track.name)
+            this_song = songs.Song(full_track)
+            st.session_state.songlist.append(this_song)
+            st.session_state.total += 1    
 
 #pick a song that hasn't been eliminated
 def choicepicker(songlist, i):
@@ -152,31 +161,31 @@ def show_playlist():
     covercol[1].markdown(
     f"""
     <div style="text-align: center; font-size: 18px;">
-        You chose this playlist:
+        You chose these songs:
     </div>
     """,
     unsafe_allow_html=True
     )    
-    # covercol[1].image(image=st.session_state.playlist_cover,width=300)
+    # covercol[1].image(image=st.session_state.list_cover,width=300)
     covercol[1].markdown(
     f"""
     <div style="display: flex; justify-content: center;">
-        <img src="{st.session_state.playlist_cover}" width="300">
+        <img src="{st.session_state.list_cover}" width="300">
     </div>
     """,
     unsafe_allow_html=True
 )
     # playlistcol2 = playlistcol[1].columns([0.2,0.6,0.2])
-    # playlistcol[1].markdown(f"**{st.session_state.playlist_name}**")
+    # playlistcol[1].markdown(f"**{st.session_state.list_name}**")
     playlistcol[1].markdown(
     f"""
     <div style="text-align: center; font-weight: bold; font-size: 18px;">
-        {st.session_state.playlist_name}
+        {st.session_state.list_name}
     </div>
     """,
     unsafe_allow_html=True
     )
-    # playlistcol[1].markdown(<div style="text-align: center"> {st.session_state.playlist_name} </div>)
+    # playlistcol[1].markdown(<div style="text-align: center"> {st.session_state.list_name} </div>)
     for song in st.session_state.songlist:
         listcont = playlistcol[1].container(border=True,height=250)
         listcol = listcont.columns([0.1,0.6,0.3])
@@ -198,18 +207,44 @@ def show_playlist():
   
 
 def link_entered(link):
-    playlist_link = link
-    if len(playlist_link) == 76:
-        playlist_id = playlist_link[34:56]
+    #user entered playlist link
+    if len(link) == 76:
+        playlist_id = link[34:56]
         playlist = spotify.playlist(playlist_id)
-        st.session_state.playlist_name = playlist.name
-        st.session_state.playlist_cover = spotify.playlist_cover_image(playlist_id)[0].url
         if playlist != None:
+            st.session_state.list_name = playlist.name
+            st.session_state.list_cover = spotify.list_cover_image(playlist_id)[0].url
+            alltracks = spotify.all_items(playlist) #bypass the limit of 100 songs and add all
             st.session_state.state = 1
-            get_songs(playlist_id)
+            get_playlist_songs(alltracks)
             st.rerun()
         else:
             linkcol[1].write("Invalid Link. Please make sure the playlist is public and not empty.")
+    #user entered album link
+    elif len(link) == 79:
+        album_id = link[31:53]
+        album = spotify.album(album_id)
+        if album != None:
+            st.session_state.list_name = album.name
+            st.session_state.list_cover = album.images[0].url
+            st.session_state.state = 1
+            alltracks = album.tracks.items
+            get_album_songs(alltracks)
+            st.rerun()
+    #user ewntered artist link
+    elif len(link) == 80:
+        artist_id = link[32:54]
+        artist = spotify.artist(artist_id)
+        albums = spotify.artist_albums(artist_id).items
+        if artist != None:
+            st.session_state.list_name = artist.name
+            st.session_state.list_cover = artist.images[0].url
+            st.session_state.state = 1
+            for album in albums:
+                this_album = spotify.album(album.id)
+                alltracks = this_album.tracks.items
+                get_album_songs(alltracks)
+            st.rerun()
     else:
         linkcol[1].write("Invalid Link. Please make sure the playlist is public and not empty.")
 
@@ -236,7 +271,7 @@ pagecol[1].markdown(
 linkcol = st.columns([0.40,0.5,0.40])
 
 if st.session_state.state == 0:
-    link = linkcol[1].text_input("Please enter in the spotify link for your playlist. Please make sure the playlist is public!",
+    link = linkcol[1].text_input("Please enter in the spotify link for your playlist, artist or album. Please make sure the playlist is public!",
                      key = "Link",
                     #  on_change =lambda: link_entered(link)
                      )
