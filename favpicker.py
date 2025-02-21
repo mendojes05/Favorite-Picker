@@ -1,9 +1,11 @@
 import songs
-import spotify
 import streamlit as st
 import random
+import tekore as tk
+import os
 
-#initialize global variables
+
+#initialize global variables and other intilization tasks
 if 'songlist' not in st.session_state:
     st.session_state.songlist = []
     st.session_state.favsong = []
@@ -18,35 +20,38 @@ if 'songlist' not in st.session_state:
     st.session_state.song_ids = set()
 
 
-currentfav = ""
-keepGoing = True
-favcount = 0
 st.set_page_config(
     page_title="Fav Song Picker",
     layout="wide"
 )
 
-def get_songs(playlist):
-    
-    for track in playlist:
-        song_id = track['track']['id']
+def get_token():
+    app_token = tk.request_client_token(os.getenv("CLIENT_ID"), os.getenv("CLIENT_SECRET"))
+    spotify = tk.Spotify(app_token)
+    return spotify
+
+def get_songs(playlist_id):
+    playlist = spotify.playlist_items(playlist_id)
+    alltracks = spotify.all_items(playlist) #bypass the limit of 100 songs and add all
+    for track in alltracks:
+        song_id = track.track.id
+        #make sure the song isn't already in the list
         if song_id not in st.session_state.song_ids:
             st.session_state.song_ids.add(song_id)
-            print(song_id)
-            this_song = songs.Song(track)
+            this_song = songs.Song(track.track)
             st.session_state.songlist.append(this_song)
             st.session_state.total += 1   
+        #check through the song names if the current track is local
         elif song_id == None:
             duplicate = False
             for song in st.session_state.songlist:
-                if song.name == track['track']['name']:
+                if song.name == track.track.name:
                     duplicate = True
                     break
             if duplicate == False:
-                this_song = songs.Song(track)
+                this_song = songs.Song(track.track)
                 st.session_state.songlist.append(this_song)
-                st.session_state.total += 1 
-
+                st.session_state.total += 1
 
 #pick a song that hasn't been eliminated
 def choicepicker(songlist, i):
@@ -196,13 +201,12 @@ def link_entered(link):
     playlist_link = link
     if len(playlist_link) == 76:
         playlist_id = playlist_link[34:56]
-        playlist = spotify.search_playlist(token, playlist_id)
-        playlist_tracks = playlist["tracks"]["items"]
-        st.session_state.playlist_name = playlist['name']
-        st.session_state.playlist_cover = playlist['images'][0]['url']
+        playlist = spotify.playlist(playlist_id)
+        st.session_state.playlist_name = playlist.name
+        st.session_state.playlist_cover = spotify.playlist_cover_image(playlist_id)[0].url
         if playlist != None:
             st.session_state.state = 1
-            get_songs(playlist_tracks)
+            get_songs(playlist_id)
             st.rerun()
         else:
             linkcol[1].write("Invalid Link. Please make sure the playlist is public and not empty.")
@@ -218,7 +222,7 @@ def start_picking():
     st.session_state.state = 2
     random.shuffle(st.session_state.songlist)
 
-token = spotify.get_token()
+spotify = get_token()
 
 pagecol = st.columns([0.25,0.75,0.25])
 # pagecol[1].title(''':musical_note: Find out your favorite song :musical_note:''')
@@ -242,7 +246,6 @@ if st.session_state.state == 0:
 elif st.session_state.state == 1:
     st.session_state.elim_countdown = len(st.session_state.songlist) - 1
     startcol = st.columns(3)
-    # startcol[1].write("Would you like to start picking?")
     startcol[1].markdown(
     f"""
     <div style="text-align: center; font-size: 18px;">
