@@ -376,6 +376,7 @@ else:
 
 
 
+
             cont1 = col[1].container(
                 border=True,
                 height=580
@@ -421,6 +422,14 @@ else:
                     url=choice2.link
                 )            
             st.session_state.l += 1
+
+            skipcol = st.columns([1.24,0.1,1.24])
+            with skipcol[1]:
+                st.button(
+                    label="Skip",
+                    key=f"skip_{st.session_state.get('l', 0)}"
+                )
+
 
 
         else:
