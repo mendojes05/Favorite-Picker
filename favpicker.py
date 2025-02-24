@@ -213,8 +213,8 @@ def link_entered(link):
         playlist = spotify.playlist(playlist_id)
         if playlist != None:
             st.session_state.list_name = playlist.name
-            st.session_state.list_cover = spotify.list_cover_image(playlist_id)[0].url
-            alltracks = spotify.all_items(playlist) #bypass the limit of 100 songs and add all
+            st.session_state.list_cover = spotify.playlist_cover_image(playlist_id)[0].url
+            alltracks = spotify.all_items(spotify.playlist_items(playlist_id)) #bypass the limit of 100 songs and add all
             st.session_state.state = 1
             get_playlist_songs(alltracks)
             st.rerun()
@@ -477,5 +477,3 @@ else:
             )
     elif len(st.session_state.songlist) == 1: end_of_game(True)
     else: end_of_game(False)
-
-
