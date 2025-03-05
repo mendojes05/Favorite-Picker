@@ -103,10 +103,11 @@ def handle_choice(winner, loser):
     st.session_state.prev_choices.append(winner)
     st.session_state.prev_choices.append(loser)
      
+#to do:
+# figure out how to shuffle when skipped but also not break the back button
 
 def skip_choice():
-    # random.shuffle(st.session_state.songlist)
-    pass
+    random.shuffle(st.session_state.songlist)
 
 def go_back():
     last_loser = st.session_state.prev_choices.pop(-1)

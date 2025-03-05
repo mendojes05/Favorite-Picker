@@ -63,8 +63,7 @@ def handle_choice(winner, loser):
      
 
 def skip_choice():
-    # random.shuffle(st.session_state.list)
-    pass
+    random.shuffle(st.session_state.list)
 
 def go_back():
     last_loser = st.session_state.prev_choices.pop(-1)
