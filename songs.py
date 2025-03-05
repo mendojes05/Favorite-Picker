@@ -4,6 +4,7 @@ class Song:
         self.track = track
         self.name = track.name
         self.artists = track.artists[0].name
+        self.eliminators = []
 
         #check if there are any other artists of the song
         for artists in track.artists[1:]:
@@ -22,7 +23,7 @@ class Song:
     #method to set when eliminated
     def elim(self, Song):
         self.eliminated = True
-        self.eliminator = Song
+        self.eliminators.append(Song)
 
     def printOut(self):
         print("The song title is "+ self.name)
